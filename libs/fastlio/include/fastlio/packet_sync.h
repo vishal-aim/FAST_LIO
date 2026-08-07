@@ -32,6 +32,11 @@ class PacketSync
   // cover the oldest buffered lidar scan. Returns false if not ready yet.
   bool nextMeasurement(MeasureGroup &meas);
 
+  // Timestamp of the most recently pushed sample of each stream -- e.g. used
+  // by a Livox-specific IMU/lidar self-sync heuristic upstream of this class.
+  double lastLidarTime() const { return last_timestamp_lidar_; }
+  double lastImuTime() const { return last_timestamp_imu_; }
+
  private:
   int lidar_type_ = 1; // AVIA, see preprocess.h::LID_TYPE
 
