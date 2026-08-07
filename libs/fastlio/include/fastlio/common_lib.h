@@ -1,15 +1,11 @@
 #ifndef COMMON_LIB_H
 #define COMMON_LIB_H
 
-#include <so3_math.h>
+#include <fastlio/so3_math.h>
+#include <fastlio/types.h>
 #include <Eigen/Eigen>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include <fast_lio/Pose6D.h>
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
-#include <tf/transform_broadcaster.h>
-#include <eigen_conversions/eigen_msg.h>
 
 using namespace std;
 using namespace Eigen;
@@ -33,7 +29,7 @@ using namespace Eigen;
 #define STD_VEC_FROM_EIGEN(mat)  vector<decltype(mat)::Scalar> (mat.data(), mat.data() + mat.rows() * mat.cols())
 #define DEBUG_FILE_DIR(name)     (string(string(ROOT_DIR) + "Log/"+ name))
 
-typedef fast_lio::Pose6D Pose6D;
+typedef fastlio::Pose6D Pose6D;
 typedef pcl::PointXYZINormal PointType;
 typedef pcl::PointCloud<PointType> PointCloudXYZI;
 typedef vector<PointType, Eigen::aligned_allocator<PointType>>  PointVector;
@@ -47,10 +43,15 @@ typedef Matrix3f M3F;
 #define MF(a,b)  Matrix<float, (a), (b)>
 #define VF(a)    Matrix<float, (a), 1>
 
-M3D Eye3d(M3D::Identity());
-M3F Eye3f(M3F::Identity());
-V3D Zero3d(0, 0, 0);
-V3F Zero3f(0, 0, 0);
+// static (not inline -- this project targets C++14, inline variables need
+// C++17): each translation unit that includes this header gets its own copy,
+// which is fine for small constant matrices like these and avoids ODR
+// duplicate-symbol errors now that common_lib.h is included by more than one
+// .cpp (it used to be pulled into a single translation unit only).
+static M3D Eye3d(M3D::Identity());
+static M3F Eye3f(M3F::Identity());
+static V3D Zero3d(0, 0, 0);
+static V3F Zero3f(0, 0, 0);
 
 struct MeasureGroup     // Lidar data and imu dates for the curent process
 {
@@ -62,7 +63,7 @@ struct MeasureGroup     // Lidar data and imu dates for the curent process
     double lidar_beg_time;
     double lidar_end_time;
     PointCloudXYZI::Ptr lidar;
-    deque<sensor_msgs::Imu::ConstPtr> imu;
+    deque<fastlio::ImuSample> imu;
 };
 
 struct StatesGroup
@@ -217,7 +218,7 @@ bool esti_normvector(Matrix<T, 3, 1> &normvec, const PointVector &point, const T
     return true;
 }
 
-float calc_dist(PointType p1, PointType p2){
+inline float calc_dist(PointType p1, PointType p2){
     float d = (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z);
     return d;
 }
