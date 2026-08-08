@@ -37,6 +37,8 @@ struct Args
   std::string outDir = ".";
   std::string format;  // "" (auto-detect from extension), "mcap", or "ros2db3"
   double mapVoxelSize = -1.0;  // <=0: use config's filter_size_map_min (or the hardcoded fallback)
+  double startTimeOffset = 0.0;    // seconds from the bag's first message on lidTopic/imuTopic
+  std::optional<double> duration;  // seconds to process, from startTimeOffset
   bool headless = false;
 };
 
@@ -57,6 +59,8 @@ bool parseArgs(int argc, char **argv, Args &args)
     else if (arg == "--out" && i + 1 < argc) args.outDir = argv[++i];
     else if (arg == "--format" && i + 1 < argc) args.format = argv[++i];
     else if (arg == "--map-voxel-size" && i + 1 < argc) args.mapVoxelSize = std::stod(argv[++i]);
+    else if (arg == "--start-time" && i + 1 < argc) args.startTimeOffset = std::stod(argv[++i]);
+    else if (arg == "--duration" && i + 1 < argc) args.duration = std::stod(argv[++i]);
     else if (arg == "--headless") args.headless = true;
     else
     {
@@ -93,7 +97,8 @@ int main(int argc, char **argv)
   {
     std::cerr << "Usage: " << argv[0]
               << " --bag <file.mcap|file.db3> --config <config.yaml> [--format mcap|ros2db3]"
-                 " [--headless] [--out <dir>] [--map-voxel-size <meters>]\n";
+                 " [--headless] [--out <dir>] [--map-voxel-size <meters>]"
+                 " [--start-time <seconds>] [--duration <seconds>]\n";
     return 1;
   }
 
@@ -129,17 +134,44 @@ int main(int argc, char **argv)
 
   std::unique_ptr<fastlio_standalone::BagSource> source;
   std::optional<size_t> totalLidarScans;
+  fastlio_standalone::BagTimeRange range;
   try
   {
     source = fastlio_standalone::openBagSource(args.bagPath, args.format);
     totalLidarScans = source->messageCount(cfg.lid_topic);
+
+    if (args.startTimeOffset > 0 || args.duration)
+    {
+      std::optional<double> bagStart = source->firstMessageTime({cfg.lid_topic, cfg.imu_topic});
+      if (!bagStart)
+      {
+        std::cerr << "--start-time/--duration requested but this bag format can't report its start "
+                      "time; ignoring both"
+                  << std::endl;
+      }
+      else
+      {
+        double from = *bagStart + args.startTimeOffset;
+        range.startTimeSec = from;
+        if (args.duration) range.endTimeSec = from + *args.duration;
+        std::cout << "Restricting replay to [" << args.startTimeOffset << "s, "
+                  << (args.duration ? std::to_string(args.startTimeOffset + *args.duration) : std::string("end"))
+                  << "s) from the bag's start" << std::endl;
+      }
+    }
   }
   catch (const std::exception &e)
   {
     std::cerr << "Failed to open bag '" << args.bagPath << "': " << e.what() << std::endl;
     return 1;
   }
-  if (totalLidarScans)
+  if (range.startTimeSec || range.endTimeSec)
+  {
+    // messageCount() reflects the whole bag, not the restricted range --
+    // showing it as a percentage denominator would be actively misleading.
+    totalLidarScans.reset();
+  }
+  else if (totalLidarScans)
   {
     std::cout << "Found " << *totalLidarScans << " lidar scans on " << cfg.lid_topic << std::endl;
   }
@@ -214,7 +246,7 @@ int main(int argc, char **argv)
   try
   {
     fastlio_standalone::replayBag(*source, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
-                                   preprocess, sync, onMeasurement);
+                                   preprocess, sync, onMeasurement, range);
   }
   catch (const std::exception &e)
   {

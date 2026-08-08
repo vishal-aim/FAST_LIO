@@ -31,7 +31,8 @@ void replayBag(BagSource &source,
                 double timeOffsetLidarToImu,
                 Preprocess &preprocess,
                 fastlio::PacketSync &sync,
-                const std::function<void(const MeasureGroup &)> &onMeasurement);
+                const std::function<void(const MeasureGroup &)> &onMeasurement,
+                const BagTimeRange &range = {});
 
 }  // namespace fastlio_standalone
 

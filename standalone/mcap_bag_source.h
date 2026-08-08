@@ -17,9 +17,11 @@ class McapBagSource : public BagSource
   explicit McapBagSource(const std::string &path);
 
   void forEachMessage(const std::vector<std::string> &topics,
-                       const std::function<void(const RawMessage &)> &cb) override;
+                       const std::function<void(const RawMessage &)> &cb,
+                       const BagTimeRange &range = {}) override;
 
   std::optional<size_t> messageCount(const std::string &topic) override;
+  std::optional<double> firstMessageTime(const std::vector<std::string> &topics) override;
 
  private:
   std::string path_;

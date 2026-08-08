@@ -14,7 +14,8 @@ namespace fastlio_standalone
 McapBagSource::McapBagSource(const std::string &path) : path_(path) {}
 
 void McapBagSource::forEachMessage(const std::vector<std::string> &topics,
-                                    const std::function<void(const RawMessage &)> &cb)
+                                    const std::function<void(const RawMessage &)> &cb,
+                                    const BagTimeRange &range)
 {
   mcap::McapReader reader;
   {
@@ -27,6 +28,8 @@ void McapBagSource::forEachMessage(const std::vector<std::string> &topics,
 
   mcap::ReadMessageOptions options;
   options.readOrder = mcap::ReadMessageOptions::ReadOrder::LogTimeOrder;
+  if (range.startTimeSec) options.startTime = static_cast<mcap::Timestamp>(*range.startTimeSec * 1e9);
+  if (range.endTimeSec) options.endTime = static_cast<mcap::Timestamp>(*range.endTimeSec * 1e9);
   options.topicFilter = [&](std::string_view topic) {
     for (const auto &t : topics)
     {
@@ -69,6 +72,21 @@ std::optional<size_t> McapBagSource::messageCount(const std::string &topic)
     }
   }
   return std::nullopt;
+}
+
+std::optional<double> McapBagSource::firstMessageTime(const std::vector<std::string> & /*topics*/)
+{
+  // mcap's Statistics only tracks start/end time across the whole file, not
+  // per-channel -- close enough for turning a relative --duration into an
+  // absolute range, since a recording's topics all start around the same
+  // time in practice.
+  mcap::McapReader reader;
+  if (!reader.open(path_).ok()) return std::nullopt;
+  if (!reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok()) return std::nullopt;
+
+  const auto &stats = reader.statistics();
+  if (!stats) return std::nullopt;
+  return static_cast<double>(stats->messageStartTime) * 1e-9;
 }
 
 }  // namespace fastlio_standalone

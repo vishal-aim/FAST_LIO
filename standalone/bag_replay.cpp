@@ -181,7 +181,8 @@ void replayBag(BagSource &source,
                 double timeOffsetLidarToImu,
                 Preprocess &preprocess,
                 fastlio::PacketSync &sync,
-                const std::function<void(const MeasureGroup &)> &onMeasurement)
+                const std::function<void(const MeasureGroup &)> &onMeasurement,
+                const BagTimeRange &range)
 {
   size_t lidarCount = 0, imuCount = 0;
   // Must persist across calls: nextMeasurement() can stage meas.lidar and
@@ -224,7 +225,7 @@ void replayBag(BagSource &source,
     }
 
     drainReady();
-  });
+  }, range);
 
   std::cout << "[bag] replayed " << lidarCount << " lidar scans, " << imuCount << " imu samples" << std::endl;
   if (lidarCount == 0)
