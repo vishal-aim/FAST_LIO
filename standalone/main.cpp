@@ -10,8 +10,9 @@
 #include <fastlio/packet_sync.h>
 #include <fastlio/preprocess.h>
 
+#include "bag_replay.h"
+#include "bag_source.h"
 #include "config.h"
-#include "mcap_reader.h"
 #include "viz/null_visualizer.h"
 #include "viz/pcl_visualizer.h"
 #include "viz/visualizer.h"
@@ -21,9 +22,10 @@ namespace
 
 struct Args
 {
-  std::string mcapPath;
+  std::string bagPath;
   std::string configPath;
   std::string outDir = ".";
+  std::string format;  // "" (auto-detect from extension), "mcap", or "ros2db3"
   bool headless = false;
 };
 
@@ -39,9 +41,10 @@ bool parseArgs(int argc, char **argv, Args &args)
   for (int i = 1; i < argc; i++)
   {
     std::string arg = argv[i];
-    if (arg == "--mcap" && i + 1 < argc) args.mcapPath = argv[++i];
+    if (arg == "--bag" && i + 1 < argc) args.bagPath = argv[++i];
     else if (arg == "--config" && i + 1 < argc) args.configPath = argv[++i];
     else if (arg == "--out" && i + 1 < argc) args.outDir = argv[++i];
+    else if (arg == "--format" && i + 1 < argc) args.format = argv[++i];
     else if (arg == "--headless") args.headless = true;
     else
     {
@@ -49,7 +52,7 @@ bool parseArgs(int argc, char **argv, Args &args)
       return false;
     }
   }
-  return !args.mcapPath.empty() && !args.configPath.empty();
+  return !args.bagPath.empty() && !args.configPath.empty();
 }
 
 PointCloudXYZI::Ptr toWorldFrame(const state_ikfom &s, const PointCloudXYZI::Ptr &bodyCloud)
@@ -77,7 +80,8 @@ int main(int argc, char **argv)
   if (!parseArgs(argc, argv, args))
   {
     std::cerr << "Usage: " << argv[0]
-              << " --mcap <file.mcap> --config <config.yaml> [--headless] [--out <dir>]\n";
+              << " --bag <file.mcap|file.db3> --config <config.yaml> [--format mcap|ros2db3]"
+                 " [--headless] [--out <dir>]\n";
     return 1;
   }
 
@@ -154,12 +158,13 @@ int main(int argc, char **argv)
 
   try
   {
-    fastlio_standalone::replayMcap(args.mcapPath, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
-                                    preprocess, sync, onMeasurement);
+    auto source = fastlio_standalone::openBagSource(args.bagPath, args.format);
+    fastlio_standalone::replayBag(*source, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
+                                   preprocess, sync, onMeasurement);
   }
   catch (const std::exception &e)
   {
-    std::cerr << "mcap replay failed: " << e.what() << std::endl;
+    std::cerr << "bag replay failed: " << e.what() << std::endl;
     return 1;
   }
 
