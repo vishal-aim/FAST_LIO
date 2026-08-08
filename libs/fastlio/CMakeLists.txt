@@ -21,7 +21,23 @@ add_library(fastlio STATIC
 )
 
 # Matches the CPU-count-based multi-threading knobs the original top-level
-# CMakeLists.txt set for laserMapping.cpp's h_share_model.
+# CMakeLists.txt set for laserMapping.cpp's h_share_model. MP_EN turns on a
+# #pragma omp parallel for over LioCore::hShareModelImpl's per-point
+# matching loop (nearest-neighbor search + plane fit against the ikd-Tree).
+#
+# The x86/amd64-only check below is intentionally preserved rather than also
+# enabling MP_EN on arm64 (e.g. Apple Silicon), even though OpenMP works
+# fine there and this repo already links libomp for that architecture too.
+# Measured on a real 15GB rosbag2 recording: enabling it on an arm64 machine
+# gave a real ~31% wall-clock speedup (89s -> 61s on a 60s slice) but also
+# made runs non-deterministic by ~5cm of final-position drift over that same
+# window -- the parallel matching loop races the ikd-Tree's own background
+# rebuild thread (see ikd_Tree.cpp's start_thread()), which is designed to
+# tolerate concurrent search-during-rebuild but not to give every query a
+# consistent tree snapshot when queries themselves speed up. Repeatable runs
+# currently matter more than the speedup, so this stays off until that's no
+# longer true -- if you do want it, drop the architecture check and keep
+# just the FASTLIO_NPROC tiers below.
 include(ProcessorCount)
 ProcessorCount(FASTLIO_NPROC)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND FASTLIO_NPROC GREATER 3)
