@@ -117,4 +117,32 @@ void Ros2SqliteBagSource::forEachMessage(const std::vector<std::string> &topics,
   sqlite3_finalize(stmt);
 }
 
+std::optional<size_t> Ros2SqliteBagSource::messageCount(const std::string &topic)
+{
+  sqlite3 *db = nullptr;
+  if (sqlite3_open_v2(path_.c_str(), &db, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK)
+  {
+    if (db) sqlite3_close(db);
+    return std::nullopt;
+  }
+  struct DbGuard
+  {
+    sqlite3 *db;
+    ~DbGuard() { sqlite3_close(db); }
+  } dbGuard{db};
+
+  sqlite3_stmt *stmt = nullptr;
+  const char *sql = "SELECT COUNT(*) FROM messages m JOIN topics t ON m.topic_id = t.id WHERE t.name = ?";
+  if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return std::nullopt;
+  sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_TRANSIENT);
+
+  std::optional<size_t> result;
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+  {
+    result = static_cast<size_t>(sqlite3_column_int64(stmt, 0));
+  }
+  sqlite3_finalize(stmt);
+  return result;
+}
+
 }  // namespace fastlio_standalone

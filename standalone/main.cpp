@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <pcl/io/pcd_io.h>
@@ -13,6 +14,7 @@
 #include "bag_replay.h"
 #include "bag_source.h"
 #include "config.h"
+#include "incremental_voxel_map.h"
 #include "viz/null_visualizer.h"
 #include "viz/pcl_visualizer.h"
 #include "viz/visualizer.h"
@@ -20,12 +22,21 @@
 namespace
 {
 
+// How often (in synced measurements) to print a progress line.
+constexpr size_t kProgressInterval = 50;
+
+// Fallback if neither --map-voxel-size nor the config's filter_size_map_min
+// resolve to something positive -- IncrementalVoxelMap needs a real leaf
+// size, unlike the old "0 disables filtering" raw-accumulation mode.
+constexpr double kDefaultMapVoxelSize = 0.1;
+
 struct Args
 {
   std::string bagPath;
   std::string configPath;
   std::string outDir = ".";
   std::string format;  // "" (auto-detect from extension), "mcap", or "ros2db3"
+  double mapVoxelSize = -1.0;  // <=0: use config's filter_size_map_min (or the hardcoded fallback)
   bool headless = false;
 };
 
@@ -45,6 +56,7 @@ bool parseArgs(int argc, char **argv, Args &args)
     else if (arg == "--config" && i + 1 < argc) args.configPath = argv[++i];
     else if (arg == "--out" && i + 1 < argc) args.outDir = argv[++i];
     else if (arg == "--format" && i + 1 < argc) args.format = argv[++i];
+    else if (arg == "--map-voxel-size" && i + 1 < argc) args.mapVoxelSize = std::stod(argv[++i]);
     else if (arg == "--headless") args.headless = true;
     else
     {
@@ -81,7 +93,7 @@ int main(int argc, char **argv)
   {
     std::cerr << "Usage: " << argv[0]
               << " --bag <file.mcap|file.db3> --config <config.yaml> [--format mcap|ros2db3]"
-                 " [--headless] [--out <dir>]\n";
+                 " [--headless] [--out <dir>] [--map-voxel-size <meters>]\n";
     return 1;
   }
 
@@ -112,6 +124,26 @@ int main(int argc, char **argv)
   fastlio::PacketSync sync;
   sync.setLidarType(cfg.lio.lidar_type);
 
+  double mapVoxelSize = args.mapVoxelSize > 0 ? args.mapVoxelSize : cfg.lio.filter_size_map_min;
+  if (mapVoxelSize <= 0) mapVoxelSize = kDefaultMapVoxelSize;
+
+  std::unique_ptr<fastlio_standalone::BagSource> source;
+  std::optional<size_t> totalLidarScans;
+  try
+  {
+    source = fastlio_standalone::openBagSource(args.bagPath, args.format);
+    totalLidarScans = source->messageCount(cfg.lid_topic);
+  }
+  catch (const std::exception &e)
+  {
+    std::cerr << "Failed to open bag '" << args.bagPath << "': " << e.what() << std::endl;
+    return 1;
+  }
+  if (totalLidarScans)
+  {
+    std::cout << "Found " << *totalLidarScans << " lidar scans on " << cfg.lid_topic << std::endl;
+  }
+
   std::unique_ptr<fastlio_standalone::Visualizer> viz;
   if (args.headless)
   {
@@ -122,16 +154,37 @@ int main(int argc, char **argv)
     viz = std::make_unique<fastlio_standalone::PclVisualizer>();
   }
 
-  PointCloudXYZI::Ptr mapAccum(new PointCloudXYZI());
+  fastlio_standalone::IncrementalVoxelMap voxelMap(mapVoxelSize);
   std::vector<TrajPoint> trajectory;
   size_t frameCount = 0;
+  size_t scansSeen = 0;
   bool stopRequested = false;
 
+  auto reportProgress = [&]() {
+    if (totalLidarScans)
+    {
+      double pct = 100.0 * static_cast<double>(scansSeen) / static_cast<double>(*totalLidarScans);
+      std::cout << "[progress] scan " << scansSeen << "/" << *totalLidarScans << " (" << std::fixed
+                << std::setprecision(1) << pct << "%), frames=" << frameCount
+                << ", map voxels=" << voxelMap.voxelCount() << std::endl;
+    }
+    else
+    {
+      std::cout << "[progress] scan " << scansSeen << ", frames=" << frameCount
+                << ", map voxels=" << voxelMap.voxelCount() << std::endl;
+    }
+  };
+
   auto onMeasurement = [&](const MeasureGroup &meas) {
+    scansSeen++;
     if (stopRequested) return;
 
     fastlio::LioCore::FrameResult res = lio->processFrame(meas);
-    if (!res.ok) return;
+    if (!res.ok)
+    {
+      if (scansSeen % kProgressInterval == 0) reportProgress();
+      return;
+    }
 
     PointCloudXYZI::Ptr worldCloud = toWorldFrame(res.state, res.down_body);
 
@@ -143,9 +196,11 @@ int main(int argc, char **argv)
       stopRequested = true;
     }
 
-    *mapAccum += *worldCloud;
+    voxelMap.addCloud(*worldCloud);
     trajectory.push_back(TrajPoint{res.time, res.state.pos, res.state.rot});
     frameCount++;
+
+    if (scansSeen % kProgressInterval == 0) reportProgress();
 
     if (cfg.runtime_pos_log_enable)
     {
@@ -158,7 +213,6 @@ int main(int argc, char **argv)
 
   try
   {
-    auto source = fastlio_standalone::openBagSource(args.bagPath, args.format);
     fastlio_standalone::replayBag(*source, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
                                    preprocess, sync, onMeasurement);
   }
@@ -170,11 +224,12 @@ int main(int argc, char **argv)
 
   std::cout << "Processed " << frameCount << " frames." << std::endl;
 
-  if (!mapAccum->empty())
+  if (voxelMap.voxelCount() > 0)
   {
+    PointCloudXYZI::Ptr finalMap = voxelMap.toCloud();
     std::string pcdPath = args.outDir + "/scans.pcd";
-    pcl::io::savePCDFileBinary(pcdPath, *mapAccum);
-    std::cout << "Saved map (" << mapAccum->size() << " points) to " << pcdPath << std::endl;
+    pcl::io::savePCDFileBinary(pcdPath, *finalMap);
+    std::cout << "Saved map (" << finalMap->size() << " points) to " << pcdPath << std::endl;
   }
 
   if (!trajectory.empty())

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -37,6 +38,11 @@ class BagSource
   // single call.
   virtual void forEachMessage(const std::vector<std::string> &topics,
                                const std::function<void(const RawMessage &)> &cb) = 0;
+
+  // Cheap upfront count of messages on `topic`, for progress reporting.
+  // std::nullopt if unknown/unavailable -- callers should treat that as
+  // "can't show a percentage" rather than an error.
+  virtual std::optional<size_t> messageCount(const std::string & /*topic*/) { return std::nullopt; }
 };
 
 // Opens the right BagSource for `path`, sniffing the container format from

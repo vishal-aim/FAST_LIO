@@ -19,6 +19,8 @@ class McapBagSource : public BagSource
   void forEachMessage(const std::vector<std::string> &topics,
                        const std::function<void(const RawMessage &)> &cb) override;
 
+  std::optional<size_t> messageCount(const std::string &topic) override;
+
  private:
   std::string path_;
 };

@@ -51,4 +51,24 @@ void McapBagSource::forEachMessage(const std::vector<std::string> &topics,
   }
 }
 
+std::optional<size_t> McapBagSource::messageCount(const std::string &topic)
+{
+  mcap::McapReader reader;
+  if (!reader.open(path_).ok()) return std::nullopt;
+  if (!reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok()) return std::nullopt;
+
+  const auto &stats = reader.statistics();
+  if (!stats) return std::nullopt;
+
+  for (const auto &[channelId, channelPtr] : reader.channels())
+  {
+    if (channelPtr && channelPtr->topic == topic)
+    {
+      auto it = stats->channelMessageCounts.find(channelId);
+      if (it != stats->channelMessageCounts.end()) return static_cast<size_t>(it->second);
+    }
+  }
+  return std::nullopt;
+}
+
 }  // namespace fastlio_standalone
