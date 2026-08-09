@@ -1,9 +1,9 @@
-#ifndef FASTLIO_STANDALONE_VIZ_NULL_VISUALIZER_H
-#define FASTLIO_STANDALONE_VIZ_NULL_VISUALIZER_H
+#ifndef FASTLIO_VIZ_NULL_VISUALIZER_H
+#define FASTLIO_VIZ_NULL_VISUALIZER_H
 
 #include "visualizer.h"
 
-namespace fastlio_standalone
+namespace fastlio
 {
 
 // --headless mode: run the algorithm and still write PCD/trajectory output,
@@ -15,6 +15,6 @@ class NullVisualizer : public Visualizer
   void onCloudWorld(double, PointCloudXYZI::ConstPtr) override {}
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio
 
 #endif

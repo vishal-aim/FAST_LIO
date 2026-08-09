@@ -3,10 +3,10 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "ros1_deserialize.h"
-#include "ros2_cdr_deserialize.h"
+#include "readers/ros1_deserialize.h"
+#include "readers/ros2_cdr_deserialize.h"
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 namespace
@@ -238,4 +238,4 @@ void replayBag(BagSource &source,
   }
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app

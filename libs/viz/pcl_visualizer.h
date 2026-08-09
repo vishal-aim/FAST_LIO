@@ -1,10 +1,10 @@
-#ifndef FASTLIO_STANDALONE_VIZ_PCL_VISUALIZER_H
-#define FASTLIO_STANDALONE_VIZ_PCL_VISUALIZER_H
+#ifndef FASTLIO_VIZ_PCL_VISUALIZER_H
+#define FASTLIO_VIZ_PCL_VISUALIZER_H
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include "visualizer.h"
 
-namespace fastlio_standalone
+namespace fastlio
 {
 
 // Visualizer backed by pcl::visualization::PCLVisualizer -- already a linked
@@ -28,6 +28,6 @@ class PclVisualizer : public Visualizer
   int frameCount_ = 0;
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio
 
 #endif

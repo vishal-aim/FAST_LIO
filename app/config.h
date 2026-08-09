@@ -1,10 +1,10 @@
-#ifndef FASTLIO_STANDALONE_CONFIG_H
-#define FASTLIO_STANDALONE_CONFIG_H
+#ifndef FASTLIO_APP_CONFIG_H
+#define FASTLIO_APP_CONFIG_H
 
 #include <string>
 #include <fastlio/lio_core.h>
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // Everything the ROS1 node loaded via nh.param<...>(...), read from the same
@@ -38,6 +38,6 @@ struct StandaloneConfig
 // Throws std::runtime_error on a missing file or a YAML parse error.
 StandaloneConfig loadYamlConfig(const std::string &path);
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
 
 #endif

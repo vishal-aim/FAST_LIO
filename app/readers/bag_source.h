@@ -1,5 +1,5 @@
-#ifndef FASTLIO_STANDALONE_BAG_SOURCE_H
-#define FASTLIO_STANDALONE_BAG_SOURCE_H
+#ifndef FASTLIO_APP_READERS_BAG_SOURCE_H
+#define FASTLIO_APP_READERS_BAG_SOURCE_H
 
 #include <cstddef>
 #include <functional>
@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // One message handed up from any container backend, already carrying its
@@ -69,6 +69,6 @@ class BagSource
 // the format can't be determined or the file can't be opened.
 std::unique_ptr<BagSource> openBagSource(const std::string &path, const std::string &formatOverride = "");
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
 
 #endif

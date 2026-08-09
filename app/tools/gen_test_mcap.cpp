@@ -1,10 +1,10 @@
 // Dev/regression-test tool: synthesizes a small ROS1-encoded mcap file
 // (Velodyne-style sensor_msgs/PointCloud2 on /velodyne_points + sensor_msgs/
-// Imu on /imu/data) for exercising fastlio_standalone's mcap decode path
+// Imu on /imu/data) for exercising fastlio_app's mcap decode path
 // without needing a real recording. Not part of the production tool.
 //
 // Usage: fastlio_gen_test_mcap <output.mcap>
-// Then:  fastlio_standalone --mcap <output.mcap> --config <a config.yaml
+// Then:  fastlio_app --bag <output.mcap> --config <a config.yaml
 //        with preprocess/timestamp_unit: 0 (SEC), matching this generator's
 //        second-denominated point .time field> --headless
 #include <mcap/mcap.hpp>

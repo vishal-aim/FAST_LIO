@@ -1,10 +1,10 @@
-#ifndef FASTLIO_STANDALONE_ROS2_SQLITE_BAG_SOURCE_H
-#define FASTLIO_STANDALONE_ROS2_SQLITE_BAG_SOURCE_H
+#ifndef FASTLIO_APP_READERS_ROS2_SQLITE_BAG_SOURCE_H
+#define FASTLIO_APP_READERS_ROS2_SQLITE_BAG_SOURCE_H
 
 #include <string>
 #include "bag_source.h"
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // BagSource backed by a rosbag2 sqlite3 (.db3) file: a plain SQLite database
@@ -33,6 +33,6 @@ class Ros2SqliteBagSource : public BagSource
   std::string path_;
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
 
 #endif

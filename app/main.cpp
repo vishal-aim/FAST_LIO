@@ -12,12 +12,12 @@
 #include <fastlio/preprocess.h>
 
 #include "bag_replay.h"
-#include "bag_source.h"
 #include "config.h"
-#include "incremental_voxel_map.h"
-#include "viz/null_visualizer.h"
-#include "viz/pcl_visualizer.h"
-#include "viz/visualizer.h"
+#include "readers/bag_source.h"
+#include <map/incremental_voxel_map.h>
+#include <viz/null_visualizer.h>
+#include <viz/pcl_visualizer.h>
+#include <viz/visualizer.h>
 
 namespace
 {
@@ -47,6 +47,7 @@ struct TrajPoint
   double time;
   V3D pos;
   Eigen::Quaterniond q;
+  V3D vel;
 };
 
 bool parseArgs(int argc, char **argv, Args &args)
@@ -102,10 +103,10 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  fastlio_standalone::StandaloneConfig cfg;
+  fastlio_app::StandaloneConfig cfg;
   try
   {
-    cfg = fastlio_standalone::loadYamlConfig(args.configPath);
+    cfg = fastlio_app::loadYamlConfig(args.configPath);
   }
   catch (const std::exception &e)
   {
@@ -132,12 +133,12 @@ int main(int argc, char **argv)
   double mapVoxelSize = args.mapVoxelSize > 0 ? args.mapVoxelSize : cfg.lio.filter_size_map_min;
   if (mapVoxelSize <= 0) mapVoxelSize = kDefaultMapVoxelSize;
 
-  std::unique_ptr<fastlio_standalone::BagSource> source;
+  std::unique_ptr<fastlio_app::BagSource> source;
   std::optional<size_t> totalLidarScans;
-  fastlio_standalone::BagTimeRange range;
+  fastlio_app::BagTimeRange range;
   try
   {
-    source = fastlio_standalone::openBagSource(args.bagPath, args.format);
+    source = fastlio_app::openBagSource(args.bagPath, args.format);
     totalLidarScans = source->messageCount(cfg.lid_topic);
 
     if (args.startTimeOffset > 0 || args.duration)
@@ -176,17 +177,17 @@ int main(int argc, char **argv)
     std::cout << "Found " << *totalLidarScans << " lidar scans on " << cfg.lid_topic << std::endl;
   }
 
-  std::unique_ptr<fastlio_standalone::Visualizer> viz;
+  std::unique_ptr<fastlio::Visualizer> viz;
   if (args.headless)
   {
-    viz = std::make_unique<fastlio_standalone::NullVisualizer>();
+    viz = std::make_unique<fastlio::NullVisualizer>();
   }
   else
   {
-    viz = std::make_unique<fastlio_standalone::PclVisualizer>();
+    viz = std::make_unique<fastlio::PclVisualizer>();
   }
 
-  fastlio_standalone::IncrementalVoxelMap voxelMap(mapVoxelSize);
+  fastlio::IncrementalVoxelMap voxelMap(mapVoxelSize);
   std::vector<TrajPoint> trajectory;
   size_t frameCount = 0;
   size_t scansSeen = 0;
@@ -229,7 +230,7 @@ int main(int argc, char **argv)
     }
 
     voxelMap.addCloud(*worldCloud);
-    trajectory.push_back(TrajPoint{res.time, res.state.pos, res.state.rot});
+    trajectory.push_back(TrajPoint{res.time, res.state.pos, res.state.rot, res.state.vel});
     frameCount++;
 
     if (scansSeen % kProgressInterval == 0) reportProgress();
@@ -245,8 +246,8 @@ int main(int argc, char **argv)
 
   try
   {
-    fastlio_standalone::replayBag(*source, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
-                                   preprocess, sync, onMeasurement, range);
+    fastlio_app::replayBag(*source, cfg.lid_topic, cfg.imu_topic, cfg.time_offset_lidar_to_imu,
+                            preprocess, sync, onMeasurement, range);
   }
   catch (const std::exception &e)
   {
@@ -271,10 +272,16 @@ int main(int argc, char **argv)
     out << std::fixed << std::setprecision(9);
     for (const auto &tp : trajectory)
     {
+      // Standard TUM columns (timestamp tx ty tz qx qy qz qw) plus 3 extra
+      // velocity columns (vx vy vz, world frame, m/s) appended at the end --
+      // strict TUM readers (e.g. evo) expect exactly 8 whitespace-separated
+      // fields per line and will reject this file.
       out << tp.time << " " << tp.pos(0) << " " << tp.pos(1) << " " << tp.pos(2) << " "
-          << tp.q.x() << " " << tp.q.y() << " " << tp.q.z() << " " << tp.q.w() << "\n";
+          << tp.q.x() << " " << tp.q.y() << " " << tp.q.z() << " " << tp.q.w() << " "
+          << tp.vel(0) << " " << tp.vel(1) << " " << tp.vel(2) << "\n";
     }
-    std::cout << "Saved trajectory (" << trajectory.size() << " poses, TUM format) to " << trajPath << std::endl;
+    std::cout << "Saved trajectory (" << trajectory.size()
+              << " poses, TUM format + vx vy vz columns) to " << trajPath << std::endl;
   }
 
   return 0;

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <mcap/reader.hpp>
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // The mcap::McapReader itself is opened lazily in forEachMessage() rather
@@ -89,4 +89,4 @@ std::optional<double> McapBagSource::firstMessageTime(const std::vector<std::str
   return static_cast<double>(stats->messageStartTime) * 1e-9;
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app

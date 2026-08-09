@@ -1,5 +1,5 @@
-#ifndef FASTLIO_STANDALONE_ROS1_DESERIALIZE_H
-#define FASTLIO_STANDALONE_ROS1_DESERIALIZE_H
+#ifndef FASTLIO_APP_READERS_ROS1_DESERIALIZE_H
+#define FASTLIO_APP_READERS_ROS1_DESERIALIZE_H
 
 // Decoder for "ros1"-encoded message bytes (schema encoding "ros1msg").
 // ROS1's wire format is a simple, undocumented-but-stable sequential

@@ -1,11 +1,11 @@
 // Dev/regression-test tool: synthesizes a small rosbag2 sqlite3 (.db3) file
 // (Velodyne-style sensor_msgs/msg/PointCloud2 on /velodyne_points +
 // sensor_msgs/msg/Imu on /imu/data, CDR-encoded) for exercising
-// fastlio_standalone's ROS2 decode path without needing a real recording.
+// fastlio_app's ROS2 decode path without needing a real recording.
 // Not part of the production tool.
 //
 // Usage: fastlio_gen_test_ros2_bag <output.db3>
-// Then:  fastlio_standalone --bag <output.db3> --config <a config.yaml with
+// Then:  fastlio_app --bag <output.db3> --config <a config.yaml with
 //        preprocess/timestamp_unit: 0 (SEC), matching this generator's
 //        second-denominated point .time field>
 #include <cmath>

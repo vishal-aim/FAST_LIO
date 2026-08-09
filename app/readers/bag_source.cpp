@@ -6,7 +6,7 @@
 #include "mcap_bag_source.h"
 #include "ros2_sqlite_bag_source.h"
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 namespace
@@ -45,4 +45,4 @@ std::unique_ptr<BagSource> openBagSource(const std::string &path, const std::str
   throw std::runtime_error("unknown bag format '" + format + "' (expected 'mcap' or 'ros2db3')");
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <sqlite3.h>
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 namespace
@@ -196,4 +196,4 @@ std::optional<double> Ros2SqliteBagSource::firstMessageTime(const std::vector<st
   return result;
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app

@@ -1,5 +1,5 @@
-#ifndef FASTLIO_STANDALONE_ROS2_CDR_DESERIALIZE_H
-#define FASTLIO_STANDALONE_ROS2_CDR_DESERIALIZE_H
+#ifndef FASTLIO_APP_READERS_ROS2_CDR_DESERIALIZE_H
+#define FASTLIO_APP_READERS_ROS2_CDR_DESERIALIZE_H
 
 // Decoder for "cdr"-encoded message bytes (ROS2's wire format, used by both
 // rosbag2 sqlite3 (.db3) and ROS2-originated mcap recordings). Unlike ROS1's

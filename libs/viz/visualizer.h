@@ -1,13 +1,13 @@
-#ifndef FASTLIO_STANDALONE_VIZ_VISUALIZER_H
-#define FASTLIO_STANDALONE_VIZ_VISUALIZER_H
+#ifndef FASTLIO_VIZ_VISUALIZER_H
+#define FASTLIO_VIZ_VISUALIZER_H
 
 #include <Eigen/Geometry>
 #include <fastlio/common_lib.h>
 
-namespace fastlio_standalone
+namespace fastlio
 {
 
-// Abstract sink for what the standalone tool has to show: the growing map
+// Abstract sink for what the standalone app has to show: the growing map
 // and the trajectory. Deliberately minimal so a future Rerun-backed (or any
 // other) implementation is a drop-in replacement -- main.cpp and LioCore
 // never need to change to swap the backend.
@@ -28,6 +28,6 @@ class Visualizer
   virtual bool shouldClose() { return false; }
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio
 
 #endif

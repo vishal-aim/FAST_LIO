@@ -1,5 +1,5 @@
-#ifndef FASTLIO_STANDALONE_ROS_TYPES_H
-#define FASTLIO_STANDALONE_ROS_TYPES_H
+#ifndef FASTLIO_APP_READERS_ROS_TYPES_H
+#define FASTLIO_APP_READERS_ROS_TYPES_H
 
 // Decoded message shapes shared between the ROS1 (raw packed) and ROS2 (CDR)
 // wire-format decoders (ros1_deserialize.h / ros2_cdr_deserialize.h). Both

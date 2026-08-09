@@ -1,10 +1,10 @@
-#ifndef FASTLIO_STANDALONE_MCAP_BAG_SOURCE_H
-#define FASTLIO_STANDALONE_MCAP_BAG_SOURCE_H
+#ifndef FASTLIO_APP_READERS_MCAP_BAG_SOURCE_H
+#define FASTLIO_APP_READERS_MCAP_BAG_SOURCE_H
 
 #include <string>
 #include "bag_source.h"
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // BagSource backed by an mcap file. Iterates in log-time order and reports
@@ -27,6 +27,6 @@ class McapBagSource : public BagSource
   std::string path_;
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
 
 #endif

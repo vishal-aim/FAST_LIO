@@ -1,6 +1,6 @@
 #include "pcl_visualizer.h"
 
-namespace fastlio_standalone
+namespace fastlio
 {
 
 PclVisualizer::PclVisualizer()
@@ -52,4 +52,4 @@ bool PclVisualizer::shouldClose()
   return viewer_->wasStopped();
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio

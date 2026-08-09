@@ -1,12 +1,12 @@
-#ifndef FASTLIO_STANDALONE_INCREMENTAL_VOXEL_MAP_H
-#define FASTLIO_STANDALONE_INCREMENTAL_VOXEL_MAP_H
+#ifndef FASTLIO_MAP_INCREMENTAL_VOXEL_MAP_H
+#define FASTLIO_MAP_INCREMENTAL_VOXEL_MAP_H
 
 #include <cmath>
 #include <cstdint>
 #include <unordered_map>
 #include <fastlio/common_lib.h>
 
-namespace fastlio_standalone
+namespace fastlio
 {
 
 // A running per-voxel centroid, updated incrementally as points arrive --
@@ -94,6 +94,6 @@ class IncrementalVoxelMap
   std::unordered_map<VoxelKey, VoxelData, VoxelKeyHash> voxels_;
 };
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio
 
 #endif

@@ -1,14 +1,14 @@
-#ifndef FASTLIO_STANDALONE_BAG_REPLAY_H
-#define FASTLIO_STANDALONE_BAG_REPLAY_H
+#ifndef FASTLIO_APP_BAG_REPLAY_H
+#define FASTLIO_APP_BAG_REPLAY_H
 
 #include <functional>
 #include <string>
 #include <fastlio/common_lib.h>
 #include <fastlio/packet_sync.h>
 #include <fastlio/preprocess.h>
-#include "bag_source.h"
+#include "readers/bag_source.h"
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 // Replays `source`'s lidar (sensor_msgs/PointCloud2) and IMU (sensor_msgs/
@@ -34,6 +34,6 @@ void replayBag(BagSource &source,
                 const std::function<void(const MeasureGroup &)> &onMeasurement,
                 const BagTimeRange &range = {});
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
 
 #endif

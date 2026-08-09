@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
 
-namespace fastlio_standalone
+namespace fastlio_app
 {
 
 namespace
@@ -73,4 +73,4 @@ StandaloneConfig loadYamlConfig(const std::string &path)
   return cfg;
 }
 
-}  // namespace fastlio_standalone
+}  // namespace fastlio_app
