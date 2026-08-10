@@ -17,6 +17,7 @@
 #include <map/incremental_voxel_map.h>
 #include <viz/null_visualizer.h>
 #include <viz/pcl_visualizer.h>
+#include <viz/rerun_visualizer.h>
 #include <viz/visualizer.h>
 
 namespace
@@ -39,7 +40,7 @@ struct Args
   double mapVoxelSize = -1.0;  // <=0: use config's filter_size_map_min (or the hardcoded fallback)
   double startTimeOffset = 0.0;    // seconds from the bag's first message on lidTopic/imuTopic
   std::optional<double> duration;  // seconds to process, from startTimeOffset
-  bool headless = false;
+  std::string viz = "pcl";  // "pcl", "rerun", or "none"
 };
 
 struct TrajPoint
@@ -48,6 +49,7 @@ struct TrajPoint
   V3D pos;
   Eigen::Quaterniond q;
   V3D vel;
+  V3D angvel;
 };
 
 bool parseArgs(int argc, char **argv, Args &args)
@@ -62,7 +64,7 @@ bool parseArgs(int argc, char **argv, Args &args)
     else if (arg == "--map-voxel-size" && i + 1 < argc) args.mapVoxelSize = std::stod(argv[++i]);
     else if (arg == "--start-time" && i + 1 < argc) args.startTimeOffset = std::stod(argv[++i]);
     else if (arg == "--duration" && i + 1 < argc) args.duration = std::stod(argv[++i]);
-    else if (arg == "--headless") args.headless = true;
+    else if (arg == "--viz" && i + 1 < argc) args.viz = argv[++i];
     else
     {
       std::cerr << "Unknown argument: " << arg << std::endl;
@@ -98,7 +100,7 @@ int main(int argc, char **argv)
   {
     std::cerr << "Usage: " << argv[0]
               << " --bag <file.mcap|file.db3> --config <config.yaml> [--format mcap|ros2db3]"
-                 " [--headless] [--out <dir>] [--map-voxel-size <meters>]"
+                 " [--viz pcl|rerun|none] [--out <dir>] [--map-voxel-size <meters>]"
                  " [--start-time <seconds>] [--duration <seconds>]\n";
     return 1;
   }
@@ -178,13 +180,22 @@ int main(int argc, char **argv)
   }
 
   std::unique_ptr<fastlio::Visualizer> viz;
-  if (args.headless)
+  if (args.viz == "none")
   {
     viz = std::make_unique<fastlio::NullVisualizer>();
   }
-  else
+  else if (args.viz == "rerun")
+  {
+    viz = std::make_unique<fastlio::RerunVisualizer>();
+  }
+  else if (args.viz == "pcl")
   {
     viz = std::make_unique<fastlio::PclVisualizer>();
+  }
+  else
+  {
+    std::cerr << "Unknown --viz backend: " << args.viz << " (expected pcl, rerun, or none)" << std::endl;
+    return 1;
   }
 
   fastlio::IncrementalVoxelMap voxelMap(mapVoxelSize);
@@ -230,7 +241,8 @@ int main(int argc, char **argv)
     }
 
     voxelMap.addCloud(*worldCloud);
-    trajectory.push_back(TrajPoint{res.time, res.state.pos, res.state.rot, res.state.vel});
+    viz->onMapUpdate(res.time, voxelMap.toCloud());
+    trajectory.push_back(TrajPoint{res.time, res.state.pos, res.state.rot, res.state.vel, res.angvel});
     frameCount++;
 
     if (scansSeen % kProgressInterval == 0) reportProgress();
@@ -272,16 +284,18 @@ int main(int argc, char **argv)
     out << std::fixed << std::setprecision(9);
     for (const auto &tp : trajectory)
     {
-      // Standard TUM columns (timestamp tx ty tz qx qy qz qw) plus 3 extra
-      // velocity columns (vx vy vz, world frame, m/s) appended at the end --
+      // Standard TUM columns (timestamp tx ty tz qx qy qz qw) plus 6 extra
+      // columns appended at the end -- vx vy vz (world frame, m/s) and wx wy
+      // wz (bias-corrected angular velocity, IMU/body frame, rad/s) --
       // strict TUM readers (e.g. evo) expect exactly 8 whitespace-separated
       // fields per line and will reject this file.
       out << tp.time << " " << tp.pos(0) << " " << tp.pos(1) << " " << tp.pos(2) << " "
           << tp.q.x() << " " << tp.q.y() << " " << tp.q.z() << " " << tp.q.w() << " "
-          << tp.vel(0) << " " << tp.vel(1) << " " << tp.vel(2) << "\n";
+          << tp.vel(0) << " " << tp.vel(1) << " " << tp.vel(2) << " "
+          << tp.angvel(0) << " " << tp.angvel(1) << " " << tp.angvel(2) << "\n";
     }
     std::cout << "Saved trajectory (" << trajectory.size()
-              << " poses, TUM format + vx vy vz columns) to " << trajPath << std::endl;
+              << " poses, TUM format + vx vy vz + wx wy wz columns) to " << trajPath << std::endl;
   }
 
   return 0;

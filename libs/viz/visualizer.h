@@ -19,6 +19,12 @@ class Visualizer
   virtual void onPose(double t, const V3D &pos, const Eigen::Quaterniond &q) = 0;
   virtual void onCloudWorld(double t, PointCloudXYZI::ConstPtr cloud) = 0;
 
+  // The de-duplicated, voxelized map built so far (see IncrementalVoxelMap::
+  // toCloud) -- distinct from onCloudWorld's per-frame scan. Optional: a
+  // backend that has nothing better to do than accumulate onCloudWorld's raw
+  // scans itself (as PclVisualizer does) can just ignore this.
+  virtual void onMapUpdate(double /*t*/, PointCloudXYZI::ConstPtr /*mapCloud*/) {}
+
   // Pumps the backend's UI event loop; called once per processed frame.
   virtual void spinOnce() {}
 

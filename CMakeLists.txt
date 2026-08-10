@@ -28,10 +28,32 @@ if(APPLE)
   if(HOMEBREW_LIBOMP_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_LIBOMP_PREFIX}")
   endif()
+
+  # rerun_cpp (below) defaults to downloading and building Apache Arrow C++
+  # from source, which fails on current Xcode Command Line Tools: Arrow
+  # 18.0.0's macOS libtool-vs-GNU-libtool check regexes for "cctools-NNNN" in
+  # `libtool -V` output, but this toolchain reports "cctools_ld-NNNN" and
+  # trips its "incompatible GNU libtool" guard. Using a Homebrew-installed
+  # Arrow (`brew install apache-arrow`) via find_package sidesteps building
+  # Arrow entirely. Same CMAKE_PREFIX_PATH hinting reason as libomp above.
+  execute_process(COMMAND brew --prefix apache-arrow
+                   OUTPUT_VARIABLE HOMEBREW_ARROW_PREFIX
+                   OUTPUT_STRIP_TRAILING_WHITESPACE
+                   ERROR_QUIET)
+  if(HOMEBREW_ARROW_PREFIX)
+    list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_ARROW_PREFIX}")
+  endif()
 endif()
+
+set(RERUN_DOWNLOAD_AND_BUILD_ARROW OFF CACHE BOOL
+    "Use find_package(Arrow) (e.g. brew install apache-arrow) instead of building Arrow from source" FORCE)
 
 add_subdirectory(libs/ikdtree)
 add_subdirectory(libs/fastlio)
+# rerun_cpp's own CMakeLists.txt (vendored as-is, not wrapped) defines the
+# rerun_sdk target that libs/viz links against -- must run before that
+# add_subdirectory.
+add_subdirectory(third_party/rerun_cpp)
 add_subdirectory(libs/viz)
 add_subdirectory(libs/map)
 add_subdirectory(third_party/mcap)

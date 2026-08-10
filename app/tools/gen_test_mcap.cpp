@@ -6,7 +6,7 @@
 // Usage: fastlio_gen_test_mcap <output.mcap>
 // Then:  fastlio_app --bag <output.mcap> --config <a config.yaml
 //        with preprocess/timestamp_unit: 0 (SEC), matching this generator's
-//        second-denominated point .time field> --headless
+//        second-denominated point .time field> --viz none
 #include <mcap/mcap.hpp>
 
 #include <cmath>

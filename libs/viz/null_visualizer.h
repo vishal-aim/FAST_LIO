@@ -6,8 +6,8 @@
 namespace fastlio
 {
 
-// --headless mode: run the algorithm and still write PCD/trajectory output,
-// just without opening a viewer window.
+// --viz none: run the algorithm and still write PCD/trajectory output, just
+// without a visualization backend.
 class NullVisualizer : public Visualizer
 {
  public:
