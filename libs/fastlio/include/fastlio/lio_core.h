@@ -57,6 +57,7 @@ class LioCore
     bool ok = false;
     double time = 0.0; // MeasureGroup::lidar_end_time
     state_ikfom state;
+    V3D angvel = V3D::Zero(); // bias-corrected angular velocity, ~time above (see ImuProcess::angvel())
     esekfom::esekf<state_ikfom, 12, input_ikfom>::cov P; // kf.get_P()
     PointCloudXYZI::Ptr body_undistorted;  // feats_undistort, body frame
     PointCloudXYZI::Ptr down_body;         // feats_down_body, body frame

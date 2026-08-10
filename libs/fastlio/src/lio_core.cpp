@@ -351,6 +351,7 @@ LioCore::FrameResult LioCore::processFrame(const MeasureGroup &meas)
 
   result.ok = true;
   result.state = state_point_;
+  result.angvel = imu_.angvel();
   result.P = kf_.get_P();
   result.body_undistorted = feats_undistort_;
   result.down_body = feats_down_body_;

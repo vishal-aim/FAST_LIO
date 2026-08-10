@@ -30,6 +30,11 @@ class ImuProcess
   Eigen::Matrix<double, 12, 12> Q;
   void Process(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, PointCloudXYZI::Ptr pcl_un_);
 
+  // Bias-corrected angular velocity at the last IMU sample folded into the
+  // most recent Process() call (i.e. ~lidar_end_time) -- set inside
+  // UndistortPcl's forward integration, not a filter state itself.
+  const V3D &angvel() const { return angvel_last; }
+
   V3D cov_acc;
   V3D cov_gyr;
   V3D cov_acc_scale;
