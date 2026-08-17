@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(fast_lio)
 
-set(CMAKE_CXX_STANDARD 17)  # app/ and third_party/mcap need 17; libs/{fastlio,ikdtree,viz}
+set(CMAKE_CXX_STANDARD 20)  # third_party/aimcap needs 20; libs/{fastlio,ikdtree,viz}
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # pin themselves to 14 via target_compile_features regardless
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -56,5 +56,6 @@ add_subdirectory(libs/fastlio)
 add_subdirectory(third_party/rerun_cpp)
 add_subdirectory(libs/viz)
 add_subdirectory(libs/map)
-add_subdirectory(third_party/mcap)
+add_subdirectory(third_party/aimcap)
+add_subdirectory(third_party/patchworkpp)
 add_subdirectory(app)
