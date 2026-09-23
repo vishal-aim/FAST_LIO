@@ -2,3 +2,6 @@
 	path = include/ikd-Tree
 	url = https://github.com/hku-mars/ikd-Tree.git
 	branch = fast_lio
+[submodule "thirdparty/aimcap"]
+	path = thirdparty/aimcap
+	url = git@github.com:aim-bagr/aimcap.git

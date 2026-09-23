@@ -1,89 +1,57 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(fast_lio)
+cmake_minimum_required(VERSION 3.16)
+project(fast_lio LANGUAGES C CXX)
 
-SET(CMAKE_BUILD_TYPE "Debug")
-
-ADD_COMPILE_OPTIONS(-std=c++14 )
-ADD_COMPILE_OPTIONS(-std=c++14 )
-set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
-
-add_definitions(-DROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread -std=c++0x -std=c++14 -fexceptions")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-message("Current CPU archtecture: ${CMAKE_SYSTEM_PROCESSOR}")
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" )
-  include(ProcessorCount)
-  ProcessorCount(N)
-  message("Processer number:  ${N}")
-  if(N GREATER 4)
-    add_definitions(-DMP_EN)
-    add_definitions(-DMP_PROC_NUM=3)
-    message("core for MP: 3")
-  elseif(N GREATER 3)
-    add_definitions(-DMP_EN)
-    add_definitions(-DMP_PROC_NUM=2)
-    message("core for MP: 2")
-  else()
-    add_definitions(-DMP_PROC_NUM=1)
-  endif()
-else()
-  add_definitions(-DMP_PROC_NUM=1)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-find_package(OpenMP QUIET)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
-
-find_package(PythonLibs REQUIRED)
-find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
-
-find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  roscpp
-  rospy
-  std_msgs
-  pcl_ros
-  tf
-  livox_ros_driver
-  message_generation
-  eigen_conversions
-)
-
+# Dependencies
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.8 REQUIRED)
+find_package(OpenMP QUIET)
+find_package(yaml-cpp REQUIRED)
 
-message(Eigen: ${EIGEN3_INCLUDE_DIR})
+if(TARGET yaml-cpp::yaml-cpp)
+  set(YAML_CPP_TARGET yaml-cpp::yaml-cpp)
+else()
+  set(YAML_CPP_TARGET yaml-cpp)
+endif()
 
-include_directories(
-	${catkin_INCLUDE_DIRS} 
-  ${EIGEN3_INCLUDE_DIR}
-  ${PCL_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
-  include)
+# Subdirectories
+add_subdirectory(libs/ikdtree)
+add_subdirectory(libs/fastlio)
+add_subdirectory(libs/map)
 
-add_message_files(
-  FILES
-  Pose6D.msg
+# aimcap MCAP reader library
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aimcap/CMakeLists.txt")
+  set(AIMCAP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(thirdparty/aimcap EXCLUDE_FROM_ALL)
+endif()
+
+# Standalone MCAP executable
+add_executable(fastlio_mcap
+  src/fastlio_mcap.cpp
+  src/config.cpp
 )
 
-generate_messages(
- DEPENDENCIES
- geometry_msgs
+target_include_directories(fastlio_mcap PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
-  DEPENDS EIGEN3 PCL
-  INCLUDE_DIRS
+target_link_libraries(fastlio_mcap PRIVATE
+  fastlio
+  ikdtree
+  map
+  aimcap::reader
+  ${YAML_CPP_TARGET}
 )
 
-add_executable(fastlio_mapping src/laserMapping.cpp include/ikd-Tree/ikd_Tree.cpp src/preprocess.cpp)
-target_link_libraries(fastlio_mapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES})
-target_include_directories(fastlio_mapping PRIVATE ${PYTHON_INCLUDE_DIRS})
+set_target_properties(fastlio_mcap PROPERTIES
+  INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib;/usr/local/lib"
+  BUILD_WITH_INSTALL_RPATH TRUE
+)
