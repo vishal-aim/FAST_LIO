@@ -104,7 +104,7 @@ fi
 # 4. Run Docker Container
 DOCKER_ARGS=(
   --rm
-  -it
+  $([[ -t 0 ]] && echo "-it" || echo "-i")
   $DOCKER_GPU_FLAGS
   --user "$(id -u):$(id -g)"
   --ipc=host

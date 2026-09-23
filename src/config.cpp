@@ -34,6 +34,16 @@ StandaloneConfig loadYamlConfig(const std::string &path)
 {
   YAML::Node root = YAML::LoadFile(path);
 
+  // Unwrap ROS 2 style parameter dictionaries if present
+  if (root["/**"] && root["/**"]["ros__parameters"])
+  {
+    root = root["/**"]["ros__parameters"];
+  }
+  else if (root["ros__parameters"])
+  {
+    root = root["ros__parameters"];
+  }
+
   StandaloneConfig cfg;
 
   YAML::Node common = root["common"];
@@ -46,14 +56,14 @@ StandaloneConfig loadYamlConfig(const std::string &path)
   cfg.scan_line = getOr<int>(preprocess, "scan_line", cfg.scan_line);
   cfg.scan_rate = getOr<int>(preprocess, "scan_rate", cfg.scan_rate);
   cfg.timestamp_unit = getOr<int>(preprocess, "timestamp_unit", cfg.timestamp_unit);
-  cfg.blind = getOr<double>(preprocess, "blind", cfg.blind);
+  cfg.blind = getOr<double>(preprocess, "blind", getOr<double>(root, "blind", cfg.blind));
 
   YAML::Node mapping = root["mapping"];
   cfg.lio.gyr_cov = getOr<double>(mapping, "gyr_cov", cfg.lio.gyr_cov);
   cfg.lio.acc_cov = getOr<double>(mapping, "acc_cov", cfg.lio.acc_cov);
   cfg.lio.b_gyr_cov = getOr<double>(mapping, "b_gyr_cov", cfg.lio.b_gyr_cov);
   cfg.lio.b_acc_cov = getOr<double>(mapping, "b_acc_cov", cfg.lio.b_acc_cov);
-  cfg.lio.det_range = getOr<float>(mapping, "det_range", cfg.lio.det_range);
+  cfg.lio.det_range = getOr<float>(mapping, "det_range", getOr<float>(root, "det_range", cfg.lio.det_range));
   cfg.lio.extrinsic_est_en = getOr<bool>(mapping, "extrinsic_est_en", cfg.lio.extrinsic_est_en);
 
   if (mapping && mapping["extrinsic_T"])
@@ -69,11 +79,11 @@ StandaloneConfig loadYamlConfig(const std::string &path)
     cfg.lio.extrinsic_R << r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8];
   }
 
-  cfg.lio.max_iterations = getOr<int>(root, "max_iteration", cfg.lio.max_iterations);
-  cfg.lio.filter_size_surf_min = getOr<double>(root, "filter_size_surf", cfg.lio.filter_size_surf_min);
-  cfg.lio.filter_size_map_min = getOr<double>(root, "filter_size_map", cfg.lio.filter_size_map_min);
-  cfg.lio.cube_side_length = getOr<double>(root, "cube_side_length", cfg.lio.cube_side_length);
-  cfg.point_filter_num = getOr<int>(root, "point_filter_num", cfg.point_filter_num);
+  cfg.lio.max_iterations = getOr<int>(mapping, "max_iteration", getOr<int>(root, "max_iteration", cfg.lio.max_iterations));
+  cfg.lio.filter_size_surf_min = getOr<double>(mapping, "filter_size_surf", getOr<double>(root, "filter_size_surf", cfg.lio.filter_size_surf_min));
+  cfg.lio.filter_size_map_min = getOr<double>(mapping, "filter_size_map", getOr<double>(root, "filter_size_map", cfg.lio.filter_size_map_min));
+  cfg.lio.cube_side_length = getOr<double>(mapping, "cube_side_length", getOr<double>(root, "cube_side_length", cfg.lio.cube_side_length));
+  cfg.point_filter_num = getOr<int>(preprocess, "point_filter_num", getOr<int>(root, "point_filter_num", cfg.point_filter_num));
   cfg.feature_extract_enable = getOr<bool>(root, "feature_extract_enable", cfg.feature_extract_enable);
   cfg.runtime_pos_log_enable = getOr<bool>(root, "runtime_pos_log_enable", cfg.runtime_pos_log_enable);
 

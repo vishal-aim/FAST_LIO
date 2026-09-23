@@ -262,6 +262,8 @@ int main(int argc, char **argv)
 
   std::cout << " LiDAR Topic : " << cfg.lid_topic << "\n"
             << " IMU Topic   : " << cfg.imu_topic << "\n"
+            << " PointFilter : " << cfg.point_filter_num << " (blind=" << cfg.blind << ", det_range=" << cfg.lio.det_range << ")\n"
+            << " Map Config  : cube_side_length=" << cfg.lio.cube_side_length << ", map_res=" << cfg.lio.filter_size_map_min << ", max_iter=" << cfg.lio.max_iterations << "\n"
             << " Extrinsics  : T=[" << cfg.lio.extrinsic_T.transpose() << "]\n"
             << "               R=\n" << cfg.lio.extrinsic_R << "\n"
             << "========================================================\n";
