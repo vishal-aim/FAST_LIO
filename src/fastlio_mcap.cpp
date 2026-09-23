@@ -276,6 +276,13 @@ int main(int argc, char **argv)
   }
   tum_file << std::fixed << std::setprecision(6);
 
+  std::string full_path = args.output_dir + "/trajectory_full.txt";
+  std::ofstream full_file(full_path);
+  if (full_file.is_open())
+  {
+    full_file << std::fixed << std::setprecision(6);
+  }
+
   std::unique_ptr<aimcap::Reader> reader;
   std::optional<uint64_t> total_lidar_scans;
   try
@@ -337,14 +344,21 @@ int main(int argc, char **argv)
 
     Eigen::Quaterniond q(res.state.rot);
 
-    // Standard TUM columns: timestamp tx ty tz qx qy qz qw
-    // Optional trailing columns (ignored by evo): vx vy vz wx wy wz
+    // Standard 8-column TUM format: timestamp tx ty tz qx qy qz qw
     tum_file << res.time << " "
              << res.state.pos.x() << " " << res.state.pos.y() << " " << res.state.pos.z() << " "
-             << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
-             << res.state.vel.x() << " " << res.state.vel.y() << " " << res.state.vel.z() << " "
-             << res.angvel.x() << " " << res.angvel.y() << " " << res.angvel.z() << "\n";
+             << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\n";
     tum_file.flush();
+
+    if (full_file.is_open())
+    {
+      full_file << res.time << " "
+                << res.state.pos.x() << " " << res.state.pos.y() << " " << res.state.pos.z() << " "
+                << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
+                << res.state.vel.x() << " " << res.state.vel.y() << " " << res.state.vel.z() << " "
+                << res.angvel.x() << " " << res.angvel.y() << " " << res.angvel.z() << "\n";
+      full_file.flush();
+    }
 
     if (args.save_map)
     {
@@ -451,6 +465,7 @@ int main(int argc, char **argv)
   }
 
   tum_file.close();
+  if (full_file.is_open()) full_file.close();
   g_active_reader = nullptr;
 
   // Also create traj.tum symlink / copy for convenience
