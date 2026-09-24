@@ -16,7 +16,7 @@ Script Options:
 FAST-LIO Options (passed to fastlio_mcap):
   -i, --input <file>    Path to input MCAP file (e.g. /home/vishal/data/recording.mcap)
   -o, --output <dir>    Output directory for trajectory (default: ./results)
-  -c, --config <file>   Configuration YAML file (default: config/fastlio_ouster.yaml)
+  -c, --config <file>   Configuration YAML file (default: config/ouster_os1_aim.yaml)
   -d, --duration <sec>  Maximum duration in seconds to process (default: full file)
   -s, --start <sec>     Start offset in seconds from beginning of recording
   -r, --rate <float>    Playback rate multiplier (1.0 = real-time, 0 = max speed)

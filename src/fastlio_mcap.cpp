@@ -44,7 +44,7 @@ struct ProgramArgs
 {
   std::string input_mcap;
   std::string output_dir = "./results";
-  std::string config_path = "config/fastlio_ouster.yaml";
+  std::string config_path = "config/ouster_os1_aim.yaml";
   std::string lidar_topic_override;
   std::string imu_topic_override;
   double max_duration = 0.0;
@@ -60,7 +60,7 @@ void printUsage(const char *prog)
             << "Options:\n"
             << "  -i, --input <file>       Input MCAP recording file (required)\n"
             << "  -o, --output <dir>       Output directory for trajectory (default: ./results)\n"
-            << "  -c, --config <file>      Configuration YAML file (default: config/fastlio_ouster.yaml)\n"
+            << "  -c, --config <file>      Configuration YAML file (default: config/ouster_os1_aim.yaml)\n"
             << "  --lidar <topic>          Override LiDAR topic name\n"
             << "  --imu <topic>            Override IMU topic name\n"
             << "  -d, --duration <sec>     Maximum duration in seconds to process (default: full file)\n"
